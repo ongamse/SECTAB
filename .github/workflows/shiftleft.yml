@@ -45,6 +45,8 @@
           python3 -m pip install --upgrade pip
           git clone https://github.com/ShiftLeftSecurity/field-integrations.git 
           pip3 install -r field-integrations/shiftleft-utils/requirements.txt
+          git clone https://github.com/gzttech/beautifulspoon.git
+          pip3 install beautifulspoon
   
       - name: Extract branch name
         shell: bash
@@ -59,25 +61,12 @@
       - name: Run Bestfix script to generate report
         shell: bash
         run: |
-          #python3 field-integrations/shiftleft-utils/bestfix.py -a ${{ github.event.repository.name }} -s .
+
           python3 field-integrations/shiftleft-utils/bestfix.py -a $(basename $(pwd)) -o $GITHUB_WORKSPACE/ngsast-bestfix-report.html
-          BESTFIX_OUTPUT=$(cat $GITHUB_WORKSPACE/ngsast-bestfix-report.html)
+          beautifulspoon $GITHUB_WORKSPACE/ngsast-bestfix-report.html --select body > $GITHUB_WORKSPACE/qwiet.html
+          BESTFIX_OUTPUT=$(cat $GITHUB_WORKSPACE/qwiet.html)
+          #BESTFIX_OUTPUT=$(cat $GITHUB_WORKSPACE/ngsast-bestfix-report.html)
           BESTFIX_BODY=$(jq -n --arg body "$BESTFIX_OUTPUT" '{body: $body}')
-          #git_hash=${{ github.event.pull_request.head.sha }}
-  
-          # JSON_STRING="{
-          #   \"body\":\"${BESTFIX_OUTPUT}\",
-          #   \"commit_id\":\"${git_hash}\",
-          #   \"path\":\".github/workflows/shiftleft.yml\",
-          #   \"line\":2,
-          #   \"start_line\":1,
-          #   \"start_side\":\"RIGHT\",
-          #   \"side\":\"RIGHT\"
-          # }"       
-          
-          JSON_STRING="{
-            \"body\":\"${BESTFIX_OUTPUT}\"
-          }"    
 
           url="https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues/${{github.event.number}}/comments"
 
