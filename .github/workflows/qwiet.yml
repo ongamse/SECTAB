@@ -1,0 +1,20 @@
+name: Qwiet
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+
+jobs:
+  NextGen-Static-Analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download ShiftLeft CLI
+      run: |
+        curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+
+    - name: NextGen Static Analysis
+      run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app javaApp1 --javasrc --cpg .
+      env:
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
