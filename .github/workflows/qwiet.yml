@@ -9,12 +9,12 @@ jobs:
   NextGen-Static-Analysis:
     runs-on: ubuntu-latest
     container:
-      image: shiftleft/core:latest
+      image: enjoyelan/slcoredocker:latest
     steps:
     - uses: actions/checkout@v3
     - name: Download ShiftLeft CLI
       run: |
-        java --version
+        docker run hello-world
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
 
     - name: NextGen Static Analysis
