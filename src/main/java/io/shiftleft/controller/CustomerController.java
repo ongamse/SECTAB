@@ -161,62 +161,18 @@ public class CustomerController {
        * @param request
        * @return
        */
-      private boolean checkCookie(WebRequest request) throws Exception {
+private boolean checkCookie(WebRequest request) throws Exception {
       	try {
-			return request.getHeader("Cookie").startsWith("settings=");
-		}
-		catch (Exception ex)
-		{
-			System.out.println(ex.getMessage());
-		}
-		return false;
+		return request.getHeader("Cookie").startsWith("settings=");
+	}
+	catch (Exception ex)
+	{
+		System.out.println(ex.getMessage());
+	}
+	return false;
       }
 
-      /**
-       * restores the preferences on the filesystem
-       *
-       * @param httpResponse
-       * @param request
-       * @throws Exception
-       */
-      @RequestMapping(value = "/loadSettings", method = RequestMethod.GET)
-      public void loadSettings(HttpServletResponse httpResponse, WebRequest request) throws Exception {
-        // get cookie values
-        if (!checkCookie(request)) {
-          httpResponse.getOutputStream().println("Error");
-          throw new Exception("cookie is incorrect");
-        }
-        String md5sum = request.getHeader("Cookie").substring("settings=".length(), 41);
-    	ClassPathResource cpr = new ClassPathResource("static");
-    	File folder = new File(cpr.getPath());
-		File[] listOfFiles = folder.listFiles();
-        String filecontent = new String();
-        for (File f : listOfFiles) {
-          // not efficient, i know
-          filecontent = new String();
-          byte[] encoded = Files.readAllBytes(f.toPath());
-          filecontent = new String(encoded, StandardCharsets.UTF_8);
-          if (filecontent.contains(md5sum)) {
-            // this will send me to the developer hell (if exists)
-
-            // encode the file settings, md5sum is removed
-            String s = new String(Base64.getEncoder().encode(filecontent.replace(md5sum, "").getBytes()));
-            // setting the new cookie
-            httpResponse.setHeader("Cookie", "settings=" + s + "," + md5sum);
-            return;
-          }
-        }
-      }
-
-
-  /**
-   * Saves the preferences (screen resolution, language..) on the filesystem
-   *
-   * @param httpResponse
-   * @param request
-   * @throws Exception
-   */
-  @RequestMapping(value = "/saveSettings", method = RequestMethod.GET)
+@RequestMapping(value = "/saveSettings", method = RequestMethod.GET)
   public void saveSettings(HttpServletResponse httpResponse, WebRequest request) throws Exception {
     // "Settings" will be stored in a cookie
     // schema: base64(filename,value1,value2...), md5sum(base64(filename,value1,value2...))
@@ -228,8 +184,8 @@ public class CustomerController {
 
     String settingsCookie = request.getHeader("Cookie");
     String[] cookie = settingsCookie.split(",");
-	if(cookie.length<2) {
-	  httpResponse.getOutputStream().println("Malformed cookie");
+if(cookie.length<2) {
+  httpResponse.getOutputStream().println("Malformed cookie");
       throw new Exception("cookie is incorrect");
     }
 
@@ -238,7 +194,7 @@ public class CustomerController {
     // Check md5sum
     String cookieMD5sum = cookie[1];
     String calcMD5Sum = DigestUtils.md5Hex(base64txt);
-	if(!cookieMD5sum.equals(calcMD5Sum))
+if(!cookieMD5sum.equals(calcMD5Sum))
     {
       httpResponse.getOutputStream().println("Wrong md5");
       throw new Exception("Invalid MD5");
@@ -246,9 +202,9 @@ public class CustomerController {
 
     // Now we can store on filesystem
     String[] settings = new String(Base64.getDecoder().decode(base64txt)).split(",");
-	// storage will have ClassPathResource as basepath
+// storage will have ClassPathResource as basepath
     ClassPathResource cpr = new ClassPathResource("./static/");
-	  File file = new File(cpr.getPath()+settings[0]);
+  File file = new File(cpr.getPath()+settings[0]);
     if(!file.exists()) {
       file.getParentFile().mkdirs();
     }
@@ -262,6 +218,7 @@ public class CustomerController {
     fos.close();
     httpResponse.getOutputStream().println("Settings Saved");
   }
+
 
   /**
    * Debug test for saving and reading a customer
