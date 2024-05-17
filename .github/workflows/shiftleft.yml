@@ -49,6 +49,9 @@ jobs:
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
     - name: Validate Build Rules
       run: |
+        echo ${{ github.repository_owner }}
+        echo "============================"
+        echo github.event.repository.name
         ${GITHUB_WORKSPACE}/sl check-analysis --app shiftleft-java-demo \
             --github-pr-number=${{github.event.number}} \
             --github-pr-user=${{ github.repository_owner }} \
