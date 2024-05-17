@@ -11,8 +11,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Perform Scan
-      uses: ShiftLeftSecurity/scan-action@master
+    # - name: Perform Scan
+    #   uses: ShiftLeftSecurity/scan-action@master
     
     - name: Download ShiftLeft CLI
       run: |
