@@ -14,9 +14,12 @@ jobs:
     - name: Perform Scan
       uses: ShiftLeftSecurity/scan-action@master
     
-    # - name: Download ShiftLeft CLI
-    #   run: |
-    #     curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+    - name: Download ShiftLeft CLI
+      run: |
+        curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+        echo ${{ github.repository_owner }}
+        echo "============================"
+        echo ${{ github.event.repository.name }}        
 
     # - name: NextGen Static Analysis
     #   run: |
@@ -29,7 +32,7 @@ jobs:
     #   env:
     #     SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
-    - uses: actions/upload-artifact@v1
-      with:
-        name: reports
-        path: reports        
+    # - uses: actions/upload-artifact@v1
+    #   with:
+    #     name: reports
+    #     path: reports        
