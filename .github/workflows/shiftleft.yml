@@ -22,6 +22,9 @@ jobs:
     - name: Download ShiftLeft CLI
       run: |
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+        echo ${{ github.repository_owner }}
+        echo "============================"
+        echo ${{ github.event.repository.name }}
     # ShiftLeft requires Java 1.8. Post the package step override the version
     - name: Setup Java JDK
       uses: actions/setup-java@v3
