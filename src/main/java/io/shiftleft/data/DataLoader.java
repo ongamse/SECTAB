@@ -55,6 +55,16 @@ public class DataLoader implements CommandLineRunner {
     return props.getProperty("db.password");
   }
 
+  public final class Constants {
+    
+        private Constants() {
+                // restrict instantiation
+        }
+    
+        public static final double PI = 3.14159;
+        public static final double PLANCK_CONSTANT = 6.62606896e-34;
+  }
+
   private boolean connectToAws() {
 
     log.info("Start Loading AWS Properties");
