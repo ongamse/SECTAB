@@ -8,6 +8,8 @@ on:
 jobs:
   NextGen-Static-Analysis:
     runs-on: ubuntu-latest
+    container: shiftleft/core:latest
+    
     steps:
     - uses: actions/checkout@v4
 
@@ -17,22 +19,22 @@ jobs:
     - name: Download ShiftLeft CLI
       run: |
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
-        echo ${{ github.repository_owner }}
-        echo "============================"
-        echo ${{ github.event.repository.name }}        
+    
+    - name: NextGen Static Analysis
+      run: |
+        set +e 
+        export QWIET_EXTERNAL_SECRETS=true
+        export SHIFTLEFT_SBOM_GENERATOR=2
+        
+        ${GITHUB_WORKSPACE}/sl analyze --strict --verbose --app secrets-java-demo  .
 
-    # - name: NextGen Static Analysis
-    #   run: |
-    #     set +e 
-    #     ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app javaApp1  .
-    #     ${GITHUB_WORKSPACE}/sl check-analysis --v2 --app javaApp1 
-    #     exitcode="$?"
-    #     echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
-    #     echo "ExitCode from CheckAnalysis:  " $exitcode
-    #   env:
-    #     SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
+        # exitcode="$?"
+        # echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
+        # echo "ExitCode from CheckAnalysis:  " $exitcode
+      env:
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
-    # - uses: actions/upload-artifact@v1
-    #   with:
-    #     name: reports
-    #     path: reports        
+    - uses: actions/upload-artifact@v1
+      with:
+        name: reports
+        path: reports        
