@@ -26,7 +26,7 @@ jobs:
         export QWIET_EXTERNAL_SECRETS=true
         export SHIFTLEFT_SBOM_GENERATOR=2
         
-        ${GITHUB_WORKSPACE}/sl analyze --strict --verbose --app secrets-java-demo  .
+        ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --app secrets-java-demo  .
 
         # exitcode="$?"
         # echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
