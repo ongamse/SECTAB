@@ -3,7 +3,7 @@ name: Qwiet
 on:
   pull_request:
   workflow_dispatch:
-  push:
+
 
 jobs:
   NextGen-Static-Analysis:
