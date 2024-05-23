@@ -25,7 +25,7 @@ jobs:
         set +e 
         export QWIET_EXTERNAL_SECRETS=true
         export SHIFTLEFT_SBOM_GENERATOR=2
-        git config --global --add safe.directory *
+        ggit config --global --add safe.directory '*'
         ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --app secrets-java-demo  .
 
         # exitcode="$?"
