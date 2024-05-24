@@ -8,7 +8,7 @@ on:
 jobs:
   NextGen-Static-Analysis:
     runs-on: ubuntu-latest
-    container: enjoyelan/slcore:latest
+    container: shiftleft/core:latest
     
     steps:
     - uses: actions/checkout@v4
