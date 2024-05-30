@@ -1,0 +1,71 @@
+
+---
+name: Qwiet
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  NextGen-Static-Analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: 11.0.x
+        distribution: zulu
+
+    - name: Download ShiftLeft CLI
+      run: |
+        curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+
+    # - name: NextGen Static Analysis
+    #   run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app ${{ github.event.repository.name }} --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc  .
+    #   env:
+    #     SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
+  
+  Build-Rules: 
+    runs-on: ubuntu-latest
+    needs: NextGen-Static-Analysis
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download ShiftLeft CLI
+      run: |
+        curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
+    - name: BestFix Prep Task
+      if: github.event_name == 'pull_request'
+      run: |
+        #apt update -y && apt install -y curl jq
+        #apt install git -y && git clone https://github.com/ShiftLeftSecurity/field-integrations.git
+        git clone https://github.com/ShiftLeftSecurity/field-integrations.git
+        pip3 install -r field-integrations/shiftleft-utils/requirements.txt
+        python3 field-integrations/shiftleft-utils/bestfix.py -a ${{ github.event.repository.name }} -s .
+        BESTFIX_OUTPUT=$(cat ngsast-bestfix-${{ github.event.repository.name }}.html)
+        BESTFIX_BODY=$(jq -n --arg body "$BESTFIX_OUTPUT" '{body: $body}')
+        curl -i -XPOST "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues/${{github.event.number}}/comments" \
+            -H "PRIVATE-TOKEN: ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "$BESTFIX_BODY"        
+      env:
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}            
+    - name: Validate Build Rules
+      run: |
+        ${GITHUB_WORKSPACE}/sl check-analysis  --app ${{ github.event.repository.name }} \
+            --github-pr-number=${{github.event.number}} \
+            --github-pr-user=${{ github.repository_owner }} \
+            --github-pr-repo=${{ github.event.repository.name }} \
+            --github-token=${{ secrets.GITHUB_TOKEN }}
+      env:
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
+
+
+
+  
