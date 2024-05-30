@@ -40,16 +40,6 @@ jobs:
     - name: Download ShiftLeft CLI
       run: |
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
-    - name: Validate Build Rules
-      run: |
-        ${GITHUB_WORKSPACE}/sl check-analysis  --app ${{ github.event.repository.name }} \
-            --github-pr-number=${{github.event.number}} \
-            --github-pr-user=${{ github.repository_owner }} \
-            --github-pr-repo=${{ github.event.repository.name }} \
-            --github-token=${{ secrets.GITHUB_TOKEN }}
-      env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
-
     - name: BestFix Prep Task
       if: github.event_name == 'pull_request'
       run: |
@@ -63,6 +53,17 @@ jobs:
         curl -i -XPOST "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues/${{github.event.number}}/comments" \
             -H "PRIVATE-TOKEN: ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "$BESTFIX_BODY"
+            -d "$BESTFIX_BODY"        
+    - name: Validate Build Rules
+      run: |
+        ${GITHUB_WORKSPACE}/sl check-analysis  --app ${{ github.event.repository.name }} \
+            --github-pr-number=${{github.event.number}} \
+            --github-pr-user=${{ github.repository_owner }} \
+            --github-pr-repo=${{ github.event.repository.name }} \
+            --github-token=${{ secrets.GITHUB_TOKEN }}
+      env:
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
+
+
 
   
