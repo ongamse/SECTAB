@@ -22,25 +22,15 @@ jobs:
       run: |
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
 
-    - name: Setup Java JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: zulu
-        java-version: 8
-
     - name: Extract branch name
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
 
     - name: NextGen Static Analysis
-      run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app shiftleft-java-demo --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc  .
+      run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app ${{ github.event.repository.name }} --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc  .
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
-        SHIFTLEFT_API_HOST: www.shiftleft.io
-        SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
-        SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443
-  
   
   Build-Rules: 
     runs-on: ubuntu-latest
@@ -52,14 +42,26 @@ jobs:
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
     - name: Validate Build Rules
       run: |
-        ${GITHUB_WORKSPACE}/sl check-analysis --v2 --app shiftleft-java-demo \
+        ${GITHUB_WORKSPACE}/sl check-analysis --v2 --app ${{ github.event.repository.name }} \
             --github-pr-number=${{github.event.number}} \
             --github-pr-user=${{ github.repository_owner }} \
             --github-pr-repo=${{ github.event.repository.name }} \
             --github-token=${{ secrets.GITHUB_TOKEN }}
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
-        SHIFTLEFT_API_HOST: www.shiftleft.io
-        SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
-        SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443 
+
+    - name: BestFix Prep Task
+      if: github.event_name == 'pull_request'
+      run: |
+        apt update && apt install -y curl jq
+        apt install git -y && git clone https://github.com/ShiftLeftSecurity/field-integrations.git
+        pip3 install -r field-integrations/shiftleft-utils/requirements.txt
+        python3 field-integrations/shiftleft-utils/bestfix.py -a ${{ github.event.repository.name }} -s .
+        BESTFIX_OUTPUT=$(cat ngsast-bestfix-${{ github.event.repository.name }}.html)
+        BESTFIX_BODY=$(jq -n --arg body "$BESTFIX_OUTPUT" '{body: $body}')
+        curl -i -XPOST "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/issues/${{github.event.number}}/comments" \
+            -H "PRIVATE-TOKEN: ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "$BESTFIX_BODY"
+
   
