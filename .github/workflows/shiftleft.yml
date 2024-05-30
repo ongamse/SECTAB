@@ -54,6 +54,8 @@ jobs:
             -H "PRIVATE-TOKEN: ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "$BESTFIX_BODY"        
+      env:
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}            
     - name: Validate Build Rules
       run: |
         ${GITHUB_WORKSPACE}/sl check-analysis  --app ${{ github.event.repository.name }} \
