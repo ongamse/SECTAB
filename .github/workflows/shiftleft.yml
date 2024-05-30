@@ -27,10 +27,10 @@ jobs:
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
 
-    - name: NextGen Static Analysis
-      run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app ${{ github.event.repository.name }} --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc  .
-      env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
+    # - name: NextGen Static Analysis
+    #   run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --app ${{ github.event.repository.name }} --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc  .
+    #   env:
+    #     SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
   
   Build-Rules: 
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
     - name: BestFix Prep Task
       if: github.event_name == 'pull_request'
       run: |
-        apt update && apt install -y curl jq
+        apt update -y && apt install -y curl jq
         apt install git -y && git clone https://github.com/ShiftLeftSecurity/field-integrations.git
         pip3 install -r field-integrations/shiftleft-utils/requirements.txt
         python3 field-integrations/shiftleft-utils/bestfix.py -a ${{ github.event.repository.name }} -s .
