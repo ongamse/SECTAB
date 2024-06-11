@@ -81,17 +81,50 @@ public class AdminController {
    * @return redirect to company numbers
    * @throws Exception
    */
-  @RequestMapping(value = "/admin/login", method = RequestMethod.POST)
-  public String doPostLogin(@CookieValue(value = "auth", defaultValue = "notset") String auth, @RequestBody String password, HttpServletResponse response, HttpServletRequest request) throws Exception {
-    String succ = "redirect:/admin/printSecrets";
+	@RequestMapping(value = "/admin/login", method = RequestMethod.POST)
+	public String doPostLogin(@CookieValue(value = "auth", defaultValue = "notset") String auth, @RequestBody String password, HttpServletResponse response, HttpServletRequest request) throws Exception {
+		String succ = "redirect:/admin/printSecrets";
+		String fail = "redirect:/admin/fail";
 
-    try {
-      // no cookie no fun
-      if (!auth.equals("notset")) {
-        if(isAdmin(auth)) {
-          request.getSession().setAttribute("auth",auth);
-          return succ;
-        }
+		try {
+			// no cookie no fun
+			if (!auth.equals("notset")) {
+				if(isAdmin(auth)) {
+					request.getSession().setAttribute("auth",auth);
+					return succ;
+				}
+			}
+
+			// split password=value
+			String[] pass = password.split("=");
+			if(pass.length!=2) {
+				return fail;
+			}
+			// compare pass
+			if(pass[1] != null && pass[1].length()>0 && pass[1].equals("shiftleftsecret"))
+			{
+				AuthToken authToken = new AuthToken(AuthToken.ADMIN);
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(bos);
+				oos.writeObject(authToken);
+				String cookieValue = new String(Base64.getEncoder().encode(bos.toByteArray()));
+				response.addCookie(new Cookie("auth", cookieValue ));
+
+				// cookie is lost after redirection
+				request.getSession().setAttribute("auth",cookieValue);
+
+				return succ;
+			}
+			return fail;
+		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+			// no succ == fail
+			return fail;
+		}
+	}
+
       }
 
       // split password=value
@@ -135,3 +168,4 @@ public class AdminController {
     return "redirect:/";
   }
 }
+
