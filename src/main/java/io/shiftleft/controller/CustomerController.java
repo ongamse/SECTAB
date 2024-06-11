@@ -303,8 +303,9 @@ public class CustomerController {
     httpResponse.setHeader("Location", String.format("%s/customers/%s",
                            request.getContextPath(), customer1.getId()));
 
-    return customer1.toString().replace("script",""); // Removed toLowerCase()
+    return customer1.toString().toLowerCase().replace("script","");
   }
+
 
 
 
@@ -392,6 +393,7 @@ public class CustomerController {
 	}
 
 }
+
 
 
 
