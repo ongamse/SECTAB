@@ -18,15 +18,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class SearchController {
 
   @RequestMapping(value = "/search/user", method = RequestMethod.GET)
-  public String doGetSearch(@RequestParam String foo, HttpServletResponse response, HttpServletRequest request) {
-    java.lang.Object message = new Object();
-    try {
-      ExpressionParser parser = new SpelExpressionParser();
-      Expression exp = parser.parseExpression(foo);
-      message = (Object) exp.getValue();
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
-    }
-    return message.toString();
-  }
-}
+	@RequestMapping(value = "/search/user", method = RequestMethod.GET)
+	public String doGetSearch(@RequestParam String foo, HttpServletResponse response, HttpServletRequest request) {
+		try {
+			// Removed the instantiation of a new Object() and the use of SpEL.
+			// Instead, we will use a whitelist to validate the input.
+			String[] whitelist = {"foo", "bar", "baz"};
+			if (!Arrays.asList(whitelist).contains(foo)) {
+				throw new IllegalArgumentException("Invalid parameter: " + foo);
+			}
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+			return "Error: " + ex.getMessage();
+		}
+		return "Valid parameter: " + foo;
+	}
+
+
