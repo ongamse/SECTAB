@@ -161,10 +161,21 @@ public class CustomerController {
        * @param request
        * @return
        */
-      private boolean checkCookie(WebRequest request) throws Exception {
+	private boolean checkCookie(WebRequest request) throws Exception {
       	try {
-			return request.getHeader("Cookie").startsWith("settings=");
+			String cookie = request.getHeader("Cookie");
+			if (cookie != null && cookie.startsWith("settings=")) {
+				// Further validation can be added here
+				return true;
+			}
 		}
+		catch (Exception ex)
+		{
+			System.out.println(ex.getMessage());
+		}
+		return false;
+      }
+
 		catch (Exception ex)
 		{
 			System.out.println(ex.getMessage());
@@ -391,4 +402,5 @@ public class CustomerController {
 	}
 
 }
+
 
