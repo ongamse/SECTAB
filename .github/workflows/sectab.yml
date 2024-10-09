@@ -57,7 +57,7 @@ jobs:
       run: |
         APP_NAME=${{ github.event.repository.name }}
         python3 export.py -f sarif -a $APP_NAME
-        env:
+      env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
     - name: Upload SARIF file to GitHub Security Tab
