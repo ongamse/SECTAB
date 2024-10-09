@@ -56,7 +56,7 @@ jobs:
     - name: Run export.py and generate SARIF report
       run: |
         APP_NAME=${{ github.event.repository.name }}
-        python3 export.py -f sarif -a $APP_NAME -o ngsast-report-${{ github.event.repository.name }}.sarif
+        python3 export.py -f sarif -a $APP_NAME
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
