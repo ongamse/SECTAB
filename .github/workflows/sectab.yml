@@ -45,6 +45,7 @@ jobs:
       run: |
         curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/export.py
         curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/config.py
+        curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/common.py
         curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/requirements.txt
 
     - name: Install Python dependencies
