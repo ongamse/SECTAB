@@ -9,6 +9,9 @@ on:
     # * is a special character in YAML so you have to quote this string
     - cron: '0 11 * * 6'
 
+permissions:
+  security-events: write  # Ensure proper permissions to upload SARIF results
+
 jobs:
   NextGen-Static-Analysis:
     runs-on: ubuntu-latest
@@ -40,7 +43,7 @@ jobs:
 
     - name: Download export.py
       run: |
-        curl -O https://github.com/ShiftLeftSecurity/field-integrations/tree/master/shiftleft-utils/export.py
+        curl -O https://path_to_your_script/export.py
 
     - name: Run export.py and generate SARIF report
       run: |
@@ -48,7 +51,9 @@ jobs:
         python3 export.py -f sarif -a $APP_NAME
 
     - name: Upload SARIF file to GitHub Security Tab
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3  # Updated to v3
       with:
-        sarif_file: ./path_to_sarif_output.sarif
+        sarif_file: ./QwietAI-sectab.sarif  # Make sure this is the correct path for the SARIF output
+
+
 
