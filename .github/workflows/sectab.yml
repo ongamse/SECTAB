@@ -43,7 +43,7 @@ jobs:
 
     - name: Download export.py
       run: |
-        curl -O https://path_to_your_script/export.py
+        curl -O https://github.com/ShiftLeftSecurity/field-integrations/blob/master/shiftleft-utils/export.py
 
     - name: Run export.py and generate SARIF report
       run: |
