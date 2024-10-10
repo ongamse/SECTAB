@@ -281,4 +281,9 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
                             },
                             rp,
                             ensure_ascii=True,
-                            indent
+                            indent=4
+                        )
+                        progress.console.print(
+                            f"Findings report successfully exported to {app_json_file}"
+                        )
+                progress.advance(task)
