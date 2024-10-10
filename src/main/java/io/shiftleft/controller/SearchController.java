@@ -17,16 +17,25 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class SearchController {
 
-  @RequestMapping(value = "/search/user", method = RequestMethod.GET)
-  public String doGetSearch(@RequestParam String foo, HttpServletResponse response, HttpServletRequest request) {
-    java.lang.Object message = new Object();
-    try {
-      ExpressionParser parser = new SpelExpressionParser();
-      Expression exp = parser.parseExpression(foo);
-      message = (Object) exp.getValue();
-    } catch (Exception ex) {
-      System.out.println(ex.getMessage());
+@RequestMapping(value = "/search/user", method = RequestMethod.GET)
+public String doGetSearch(@RequestParam String foo, HttpServletResponse response, HttpServletRequest request) {
+    // Check if the user is authenticated
+    if (SecurityContextHolder.getContext().getAuthentication() == null || !SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+        throw new SecurityException("Unauthorized access");
     }
+
+    Object message = new Object();
+    try {
+        ExpressionParser parser = new SpelExpressionParser();
+        Expression exp = parser.parseExpression(foo);
+        message = exp.getValue();
+    } catch (Exception ex) {
+        logger.error(ex.getMessage()); // Add additional context or handling here
+    }
+    return message.toString();
+}
+
     return message.toString();
   }
 }
+
