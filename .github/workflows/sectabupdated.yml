@@ -58,7 +58,7 @@ jobs:
     - name: Run export.py and generate SARIF report
       run: |
         APP_NAME=${{ github.event.repository.name }}
-        python3 ${GITHUB_WORKSPACE}/export3.py -f sarif -a $APP_NAME
+        python3 ${GITHUB_WORKSPACE}/export4.py -f sarif -a $APP_NAME
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
