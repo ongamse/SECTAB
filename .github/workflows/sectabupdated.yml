@@ -40,6 +40,12 @@ jobs:
         SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
         SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443
 
+    - name: Download export.py and requirements.txt
+      run: |
+        #curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/export.py
+        curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/config.py
+        curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/common.py
+        #curl -O https://raw.githubusercontent.com/ShiftLeftSecurity/field-integrations/master/shiftleft-utils/requirements.txt
     - name: Verify export.py file exists
       run: |
         ls -la ${GITHUB_WORKSPACE}
