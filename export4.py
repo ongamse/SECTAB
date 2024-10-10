@@ -74,10 +74,10 @@ def export_csv(app_list, findings, report_file):
             cvss_31_severity_rating = ""
             cvss_score = ""
             reachability = ""
-            package_component = ""  # Initialize package_component
-            cve = ""  # Initialize CVE
+            package_component = ""
+            cve = ""
             files_loc_list = set()
-            # Find the source, sink and other tags
+            # Find the source, sink, and other tags
             for afinding in findings:
                 details = afinding.get("details", {})
                 source_method = details.get("source_method", "")
@@ -97,12 +97,8 @@ def export_csv(app_list, findings, report_file):
                             cve = tag.get("value")
                 if details.get("file_locations"):
                     files_loc_list.update(details.get("file_locations"))
-                # For old scans, details block might be empty.
-                # We go old school and iterate all dataflows
                 if not source_method or not sink_method or not files_loc_list:
-                    dfobj = {}
-                    if details.get("dataflow"):
-                        dfobj = details.get("dataflow")
+                    dfobj = details.get("dataflow", {})
                     dataflows = dfobj.get("list", [])
                     files_loc_list = set()
                     for df in dataflows:
@@ -172,14 +168,11 @@ def export_csv(app_list, findings, report_file):
                                 "reachable"
                                 if afinding.get("related_findings", [])
                                 else "N/A",
-                                package_component,  # Include package_component in CSV output
-                                cve,  # Include CVE in CSV output
                             ]
                         )
 
 
 def get_all_findings(client, org_id, app_name, version):
-    """Method to retrieve all findings"""
     findings_list = []
     findings_url = get_findings_url(org_id, app_name, version, None)
     page_available = True
@@ -230,7 +223,6 @@ def get_all_findings(client, org_id, app_name, version):
 def export_report(org_id, app_list, report_file, reports_dir, format):
     if not app_list:
         app_list = get_all_apps(org_id)
-    # This might increase memory consumption for large organizations
     findings_dict = {}
     work_dir = os.getcwd()
     for e in ["GITHUB_WORKSPACE", "WORKSPACE"]:
@@ -243,10 +235,6 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
         redirect_stdout=False,
         refresh_per_second=1,
     ) as progress:
-        if len(app_list) > 50:
-            progress.console.print(
-                f"Export process would take a while for {len(app_list)} apps.\nUse SARIF or xml format to avoid crashes."
-            )
         task = progress.add_task(
             f"[green] Export Findings for {len(app_list)} apps",
             total=len(app_list),
@@ -261,106 +249,88 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
                 app_name = app.get("name")
                 progress.update(task, description=f"Processing [bold]{app_name}[/bold]")
                 findings, scan, counts = get_all_findings(client, org_id, app_id, None)
-                file_category_set = set()
-                if format == "xml" or report_file.endswith(".xml"):
-                    app_report_file = report_file.replace(".xml", "-" + app_id + ".xml")
-                    with open(app_report_file, mode="w") as rp:
-                        xml_data = json2xml.Json2xml(findings).to_xml()
-                        if xml_data:
-                            rp.write(xml_data)
-                            progress.console.print(
-                                f"Findings exported to XML report file: {app_report_file}"
-                            )
-                if format == "sarif" or report_file.endswith(".sarif"):
-                    sarif_output_file = report_file.replace(".sarif", "-" + app_id + ".sarif")
-                    convertLib.export_to_sarif(findings, sarif_output_file, counts)
-                    progress.console.print(
-                        f"Findings exported to SARIF report file: {sarif_output_file}"
+
+                if format == "sarif":
+                    app_sarif_file = report_file.replace(
+                        ".sarif", "-" + app_id + ".sarif"
                     )
-                if not report_file.endswith(".csv"):
-                    continue
-                export_csv([app], findings, report_file)
-                time.sleep(config.polling_delay)
-                progress.advance(task)
+                    app_json_file = app_sarif_file.replace(".sarif", ".json")
+                    with open(app_json_file, mode="w") as rp:
+                        # Add findings to the JSON file
+                        for afinding in findings:
+                            tags = afinding.get("tags")
+                            reachability = ""
+                            package_component = ""
+                            cve = ""
+                            if tags:
+                                for tag in tags:
+                                    if tag.get("key") == "reachability":
+                                        reachability = tag.get("value")
+                                    elif tag.get("key") == "package_component":
+                                        package_component = tag.get("value")
+                                    elif tag.get("key") == "cve":
+                                        cve = tag.get("value")
+                            afinding["reachability"] = reachability
+                            afinding["package_component"] = package_component
+                            afinding["cve"] = cve
 
-def main():
-    parser = argparse.ArgumentParser(description="Export findings from ShiftLeft API")
-    parser.add_argument(
-        "-a", "--app", dest="app", help="Application Name (e.g., app1)"
-    )
-    parser.add_argument(
-        "-f", "--format", dest="format", default="csv", help="Output format (csv, xml, sarif)"
-    )
-    args = parser.parse_args()
-
-    # Ensure there is an organization ID
-    if not config.ORG_ID:
-        console.print("[red]Error: Organization ID is not set in config.py[/red]")
-        sys.exit(1)
-
-    app_list = []
-    if args.app:
-        app = {
-            "name": args.app,
-            "id": args.app,
-            "tags": [],
-        }
-        app_list.append(app)
-    else:
-        app_list = get_all_apps(config.ORG_ID)
-
-    reports_dir = "reports"
-    if not os.path.exists(reports_dir):
-        os.makedirs(reports_dir)
-
-    report_file = os.path.join(reports_dir, f"findings-{int(time.time())}.{args.format}")
-
-    export_report(config.ORG_ID, app_list, report_file, reports_dir, args.format)
+                        json.dump(
+                            {app_name: findings},
+                            rp,
+                            ensure_ascii=True,
+                            indent=None,
+                        )
+                        rp.flush()
+                    convertLib.convert_file(
+                        "ng-sast",
+                        os.getenv("TOOL_VERSION"),
+                        app_json_file,
+                        app_sarif_file,
+                    )
+                    findings_dict[app_name] = {
+                        "scan": scan,
+                        "counts": counts,
+                        "report_file": app_sarif_file,
+                    }
+                else:
+                    export_csv([app], findings, report_file)
+                progress.update(task, advance=1)
+    return findings_dict
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="ShiftLeft Findings Report Exporter")
+    parser.add_argument(
+        "-a",
+        "--apps",
+        help="Comma Separated list of apps to process. Leave empty for all apps.",
+    )
+    parser.add_argument(
+        "-t", "--tags", help="Comma separated list of tags to filter apps"
+    )
+    parser.add_argument(
+        "-d", "--outputdir", help="Output Directory for the reports", required=False
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        help="Output format",
+        choices=["json", "xml", "csv", "sarif"],
+        default="sarif",
+    )
+    args = parser.parse_args()
 
-    if not config.SHIFTLEFT_ACCESS_TOKEN:
-        console.print(
-            "Set the environment variable SHIFTLEFT_ACCESS_TOKEN before running this script"
-        )
-        sys.exit(1)
+    config.SHIFTLEFT_API_TOKEN = os.getenv("SHIFTLEFT_API_TOKEN")
+    org_id = extract_org_id(headers)
 
-    org_id = extract_org_id(config.SHIFTLEFT_ACCESS_TOKEN)
-    if not org_id:
-        console.print(
-            "Ensure the environment varibale SHIFTLEFT_ACCESS_TOKEN is copied exactly as-is from the website"
-        )
-        sys.exit(1)
+    report_file = os.getenv("GITHUB_STEP_SUMMARY", "/tmp/export_findings.sarif")
+    if args.outputdir:
+        report_file = os.path.join(args.outputdir, "export_findings.sarif")
+        os.makedirs(args.outputdir, exist_ok=True)
 
-    console.print(config.ngsast_logo)
-    start_time = time.monotonic_ns()
-    args = build_args()
-    app_list = []
-    if args.app_name:
-        app_list.append({"id": args.app_name, "name": args.app_name})
-    report_file = args.report_file
-    reports_dir = args.reports_dir
-    format = args.format
-    # Fix file extensions for xml format
-    if format == "xml":
-        report_file = report_file.replace(".csv", ".xml")
-    if format == "sarif":
-        report_file = report_file.replace(".csv", ".sarif")
-    if format == "raw":
-        report_file = report_file.replace(".csv", ".json")
-    elif format == "sl":
-        if not args.app_name:
-            console.print(
-                "This format is only suitable for OWASP Benchmark purposes. Use json or csv for all other apps"
-            )
-            sys.exit(1)
-        if not report_file:
-            report_file = "Benchmark_1.2-ShiftLeft.sl"
-    if reports_dir:
-        os.makedirs(reports_dir, exist_ok=True)
-        report_file = os.path.join(reports_dir, report_file)
-    export_report(org_id, app_list, report_file, reports_dir, format)
+    reports_dir = os.path.dirname(report_file)
+
+    app_list = get_all_apps(org_id)
+    export_report(org_id, app_list, report_file, reports_dir, args.format)
     end_time = time.monotonic_ns()
     total_time_sec = round((end_time - start_time) / 1000000000, 2)
