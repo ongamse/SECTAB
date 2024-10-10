@@ -1,4 +1,4 @@
-# This workflow integrates ShiftLeft NG SAST with GitHub and exports SARIF results to the Security Tab
+# This workflow integrates QwietAI preZero SAST with GitHub and exports SARIF results to the Security Tab
 name: QwietAFPRnBR2
 
 on:
