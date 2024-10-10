@@ -1,0 +1,12 @@
+requests
+json2xml
+rich
+pyjwt
+joern2sarif
+pytest_httpserver
+httpx[http2]
+dask
+dask[array]
+PyGitHub
+packaging
+pdfkit
