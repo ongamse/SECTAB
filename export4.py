@@ -74,10 +74,8 @@ def export_csv(app_list, findings, report_file):
             cvss_31_severity_rating = ""
             cvss_score = ""
             reachability = ""
-            package_component = ""
-            cve = ""
             files_loc_list = set()
-            # Find the source, sink, and other tags
+            # Find the source, sink and other tags
             for afinding in findings:
                 details = afinding.get("details", {})
                 source_method = details.get("source_method", "")
@@ -97,8 +95,12 @@ def export_csv(app_list, findings, report_file):
                             cve = tag.get("value")
                 if details.get("file_locations"):
                     files_loc_list.update(details.get("file_locations"))
+                # For old scans, details block might be empty.
+                # We go old school and iterate all dataflows
                 if not source_method or not sink_method or not files_loc_list:
-                    dfobj = details.get("dataflow", {})
+                    dfobj = {}
+                    if details.get("dataflow"):
+                        dfobj = details.get("dataflow")
                     dataflows = dfobj.get("list", [])
                     files_loc_list = set()
                     for df in dataflows:
@@ -173,6 +175,7 @@ def export_csv(app_list, findings, report_file):
 
 
 def get_all_findings(client, org_id, app_name, version):
+    """Method to retrieve all findings"""
     findings_list = []
     findings_url = get_findings_url(org_id, app_name, version, None)
     page_available = True
@@ -223,6 +226,7 @@ def get_all_findings(client, org_id, app_name, version):
 def export_report(org_id, app_list, report_file, reports_dir, format):
     if not app_list:
         app_list = get_all_apps(org_id)
+    # This might increase memory consumption for large organizations
     findings_dict = {}
     work_dir = os.getcwd()
     for e in ["GITHUB_WORKSPACE", "WORKSPACE"]:
@@ -235,6 +239,10 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
         redirect_stdout=False,
         refresh_per_second=1,
     ) as progress:
+        if len(app_list) > 50:
+            progress.console.print(
+                f"Export process would take a while for {len(app_list)} apps.\nUse SARIF or xml format to avoid crashes."
+            )
         task = progress.add_task(
             f"[green] Export Findings for {len(app_list)} apps",
             total=len(app_list),
@@ -249,31 +257,50 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
                 app_name = app.get("name")
                 progress.update(task, description=f"Processing [bold]{app_name}[/bold]")
                 findings, scan, counts = get_all_findings(client, org_id, app_id, None)
-
-                if format == "sarif":
+                file_category_set = set()
+                if format == "xml" or report_file.endswith(".xml"):
+                    app_report_file = report_file.replace(".xml", "-" + app_id + ".xml")
+                    with open(app_report_file, mode="w") as rp:
+                        xml_data = json2xml.Json2xml(findings).to_xml()
+                        if xml_data:
+                            rp.write(xml_data)
+                            progress.console.print(
+                                f"Findings report successfully exported to {app_report_file}"
+                            )
+                elif format == "raw":
+                    app_json_file = report_file.replace(".json", "-" + app_id + ".json")
+                    with open(app_json_file, mode="w") as rp:
+                        json.dump(
+                            {
+                                "name": app_name,
+                                "scan": scan,
+                                "findings": findings,
+                                "counts": counts,
+                            },
+                            rp,
+                            ensure_ascii=True,
+                            indent=None,
+                        )
+                        rp.flush()
+                        progress.console.print(
+                            f"Json file successfully exported to {app_json_file}"
+                        )
+                elif format == "sarif":
                     app_sarif_file = report_file.replace(
                         ".sarif", "-" + app_id + ".sarif"
                     )
                     app_json_file = app_sarif_file.replace(".sarif", ".json")
                     with open(app_json_file, mode="w") as rp:
-                        # Add findings to the JSON file
-                        for afinding in findings:
-                            tags = afinding.get("tags")
-                            reachability = ""
-                            package_component = ""
-                            cve = ""
-                            if tags:
-                                for tag in tags:
-                                    if tag.get("key") == "reachability":
-                                        reachability = tag.get("value")
-                                    elif tag.get("key") == "package_component":
-                                        package_component = tag.get("value")
-                                    elif tag.get("key") == "cve":
-                                        cve = tag.get("value")
-                            afinding["reachability"] = reachability
-                            afinding["package_component"] = package_component
-                            afinding["cve"] = cve
-
+                        for finding in findings:
+                            tags = finding.get("tags", [])
+                            reachability = next((tag['value'] for tag in tags if tag.get('key') == 'reachability'), 'N/A')
+                            package_component = next((tag['value'] for tag in tags if tag.get('key') == 'package_component'), 'N/A')
+                            cve = next((tag['value'] for tag in tags if tag.get('key') == 'cve'), 'N/A')
+    
+                            finding['reachability'] = reachability
+                            finding['package_component'] = package_component
+                            finding['cve'] = cve
+                            
                         json.dump(
                             {app_name: findings},
                             rp,
@@ -283,57 +310,174 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
                         rp.flush()
                     convertLib.convert_file(
                         "ng-sast",
-                        os.getenv("CI_SHA", os.getenv("GIT_COMMIT", "")),
-                        os.getenv("REPO", "not available"),
-                        os.getenv("SL_CUSTOMER_ID", "ShiftLeft"),
-                        os.getenv("APP_NAME", "ShiftLeft"),
-                        os.getenv("APP_VERSION", "N/A"),
-                        os.getenv("APP_VERSION"),
+                        os.getenv("TOOL_ARGS", ""),
+                        work_dir,
                         app_json_file,
                         app_sarif_file,
+                        None,
                     )
-                    findings_dict[app_name] = {
-                        "scan": scan,
-                        "counts": counts,
-                        "report_file": app_sarif_file,
-                    }
-                else:
+                    progress.console.print(
+                        f"SARIF file successfully exported to {app_sarif_file}"
+                    )
+                    os.remove(app_json_file)
+                elif format == "sl":
+                    with open(report_file, mode="w") as rp:
+                        for af in findings:
+                            details = af.get("details")
+                            title = af.get("title")
+                            # filename could be found either in file_locations or fileName
+                            filename = ""
+                            if details and details.get("file_locations"):
+                                file_locations = details.get("file_locations")
+                                if len(file_locations):
+                                    filename = (
+                                        file_locations[0].split(":")[0].split("/")[-1]
+                                    )
+                                    filename = filename.replace(".java", "")
+                            # If there is no file_locations try to extract the name from the title
+                            if not filename and "BenchmarkTest" in title:
+                                filename = (
+                                    title.split(" in ")[-1]
+                                    .replace("`", "")
+                                    .split(".")[0]
+                                )
+                            if filename.startswith("BenchmarkTest"):
+                                filename = filename.replace("BenchmarkTest", "")
+                            else:
+                                # Try to get the filename from source_method in details
+                                source_method = details.get("source_method")
+                                if source_method and "BenchmarkTest" in source_method:
+                                    filename = source_method.split(":")[0].split(".")[4]
+                                    filename = filename.replace("BenchmarkTest", "")
+                                else:
+                                    progress.console.print(
+                                        f'Get dataflow for {af.get("id")}'
+                                    )
+                                    dataflows = details.get("dataflow", {}).get("list")
+                                    if dataflows:
+                                        for df in dataflows:
+                                            location = df.get("location")
+                                            if location.get(
+                                                "class_name"
+                                            ) and "BenchmarkTest" in location.get(
+                                                "class_name"
+                                            ):
+                                                filename = location.get(
+                                                    "class_name"
+                                                ).split(".")[-1]
+                                                filename = filename.replace(
+                                                    "BenchmarkTest", ""
+                                                )
+                                                break
+                            if not filename:
+                                progress.console.print(
+                                    f"Unable to extract filename from file_locations or title {title}. Skipping ..."
+                                )
+                                continue
+                            cwes = (
+                                int(pair["value"])
+                                for pair in af["tags"]
+                                if pair["key"] == "cwe_category"
+                            )
+                            categories = (
+                                config.sl_owasp_category[cwe]
+                                for cwe in cwes
+                                if cwe in config.sl_owasp_category
+                            )
+                            try:
+                                category = next(categories)
+                                file_category = f"{filename},{category}"
+                                if file_category not in file_category_set:
+                                    rp.write(file_category + "\n")
+                                    file_category_set.add(file_category)
+                            except StopIteration:
+                                pass
+                        progress.console.print(
+                            f"Findings report successfully exported to {report_file}"
+                        )
+                elif format == "csv":
                     export_csv([app], findings, report_file)
-                progress.update(task, advance=1)
-    return findings_dict
+                else:
+                    findings_dict[app_name] = findings
+                progress.advance(task)
+    if format == "json":
+        with open(report_file, mode="w") as rp:
+            json.dump(findings_dict, rp, ensure_ascii=True, indent=config.json_indent)
+            console.print(f"JSON report successfully exported to {report_file}")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="ShiftLeft Findings Report Exporter")
+def build_args():
+    """
+    Constructs command line arguments for the export script
+    """
+    parser = argparse.ArgumentParser(description="ShiftLeft NG SAST export script")
     parser.add_argument(
         "-a",
-        "--apps",
-        help="Comma Separated list of apps to process. Leave empty for all apps.",
+        "--app",
+        dest="app_name",
+        help="App name",
+        default=config.SHIFTLEFT_APP,
     )
     parser.add_argument(
-        "-t", "--tags", help="Comma separated list of tags to filter apps"
+        "-o",
+        "--report_file",
+        dest="report_file",
+        help="Report filename",
+        default="ngsast-report.csv",
     )
-    parser.add_argument(
-        "-d", "--outputdir", help="Output Directory for the reports", required=False
-    )
+    parser.add_argument("--reports_dir", dest="reports_dir", help="Reports directory")
     parser.add_argument(
         "-f",
         "--format",
-        help="Output format",
-        choices=["json", "xml", "csv", "sarif"],
-        default="sarif",
+        dest="format",
+        help="Report format",
+        default="csv",
+        choices=["json", "xml", "csv", "sl", "sarif", "raw"],
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    config.SHIFTLEFT_API_TOKEN = os.getenv("SHIFTLEFT_API_TOKEN")
-    org_id = extract_org_id(headers)
 
-    report_file = os.getenv("GITHUB_STEP_SUMMARY", "/tmp/export_findings.sarif")
-    if args.outputdir:
-        report_file = os.path.join(args.outputdir, "export_findings.sarif")
-        os.makedirs(args.outputdir, exist_ok=True)
+if __name__ == "__main__":
+    if not config.SHIFTLEFT_ACCESS_TOKEN:
+        console.print(
+            "Set the environment variable SHIFTLEFT_ACCESS_TOKEN before running this script"
+        )
+        sys.exit(1)
 
-    reports_dir = os.path.dirname(report_file)
+    org_id = extract_org_id(config.SHIFTLEFT_ACCESS_TOKEN)
+    if not org_id:
+        console.print(
+            "Ensure the environment varibale SHIFTLEFT_ACCESS_TOKEN is copied exactly as-is from the website"
+        )
+        sys.exit(1)
 
-    app_list = get_all_apps(org_id)
-    export_report(org_id, app_list, report_file, reports_dir, args.format)
+    console.print(config.ngsast_logo)
+    start_time = time.monotonic_ns()
+    args = build_args()
+    app_list = []
+    if args.app_name:
+        app_list.append({"id": args.app_name, "name": args.app_name})
+    report_file = args.report_file
+    reports_dir = args.reports_dir
+    format = args.format
+    # Fix file extensions for xml format
+    if format == "xml":
+        report_file = report_file.replace(".csv", ".xml")
+    if format == "sarif":
+        report_file = report_file.replace(".csv", ".sarif")
+    if format == "raw":
+        report_file = report_file.replace(".csv", ".json")
+    elif format == "sl":
+        if not args.app_name:
+            console.print(
+                "This format is only suitable for OWASP Benchmark purposes. Use json or csv for all other apps"
+            )
+            sys.exit(1)
+        if not report_file:
+            report_file = "Benchmark_1.2-ShiftLeft.sl"
+    if reports_dir:
+        os.makedirs(reports_dir, exist_ok=True)
+        report_file = os.path.join(reports_dir, report_file)
+    export_report(org_id, app_list, report_file, reports_dir, format)
+    end_time = time.monotonic_ns()
+    total_time_sec = round((end_time - start_time) / 1000000000, 2)
