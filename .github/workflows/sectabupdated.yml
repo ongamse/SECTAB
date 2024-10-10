@@ -12,7 +12,7 @@ permissions:
   security-events: write  # Ensure proper permissions to upload SARIF results
 
 jobs:
-  NextGen-Static-Analysis:
+  QwietAI-preZero-Analysis:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
