@@ -1,5 +1,5 @@
 # This workflow integrates ShiftLeft NG SAST with GitHub and exports SARIF results to the Security Tab
-name: QwietAFPRnBR2
+name: QwietAFPRnBR
 
 on:
   pull_request:
@@ -40,6 +40,10 @@ jobs:
         SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
         SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443
 
+    - name: Verify export.py file exists
+      run: |
+        ls -la ${GITHUB_WORKSPACE}
+
     - name: Install Python dependencies
       run: |
         python3 -m pip install --upgrade pip
@@ -48,7 +52,7 @@ jobs:
     - name: Run export.py and generate SARIF report
       run: |
         APP_NAME=${{ github.event.repository.name }}
-        python3 ./export.py -f sarif -a $APP_NAME
+        python3 ${GITHUB_WORKSPACE}/export.py -f sarif -a $APP_NAME
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
