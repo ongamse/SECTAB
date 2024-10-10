@@ -283,7 +283,12 @@ def export_report(org_id, app_list, report_file, reports_dir, format):
                         rp.flush()
                     convertLib.convert_file(
                         "ng-sast",
-                        os.getenv("TOOL_VERSION"),
+                        os.getenv("CI_SHA", os.getenv("GIT_COMMIT", "")),
+                        os.getenv("REPO", "not available"),
+                        os.getenv("SL_CUSTOMER_ID", "ShiftLeft"),
+                        os.getenv("APP_NAME", "ShiftLeft"),
+                        os.getenv("APP_VERSION", "N/A"),
+                        os.getenv("APP_VERSION"),
                         app_json_file,
                         app_sarif_file,
                     )
@@ -332,5 +337,3 @@ if __name__ == "__main__":
 
     app_list = get_all_apps(org_id)
     export_report(org_id, app_list, report_file, reports_dir, args.format)
-    end_time = time.monotonic_ns()
-    total_time_sec = round((end_time - start_time) / 1000000000, 2)
