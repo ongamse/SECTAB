@@ -1,5 +1,5 @@
 # This workflow integrates ShiftLeft NG SAST with GitHub and exports SARIF results to the Security Tab
-name: QwietAFPRnBR
+name: QwietAFPRnBR2
 
 on:
   pull_request:
