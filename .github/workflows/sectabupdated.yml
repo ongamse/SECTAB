@@ -23,7 +23,7 @@ jobs:
         distribution: zulu
         java-version: 8
 
-    - name: Download ShiftLeft CLI
+    - name: Download QwietAI CLI
       run: |
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
 
@@ -32,7 +32,7 @@ jobs:
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
 
-    - name: NextGen Static Analysis
+    - name: QwietAI preZero Analysis
       run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --container 18fgsa/s3-resource --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc . -- --exclude common.py,export2.py,export3.py,export4.py
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
