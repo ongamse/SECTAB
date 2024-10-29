@@ -35,7 +35,7 @@ jobs:
     - name: QwietAI preZero Analysis
       run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --app QWIETAIMulti --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }}
       env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN_POC }}
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
         SHIFTLEFT_API_HOST: www.shiftleft.io
         SHIFTLEFT_GRPC_TELEMETRY_HOST: telemetry.shiftleft.io:443
         SHIFTLEFT_GRPC_API_HOST: api.shiftleft.io:443
@@ -56,7 +56,7 @@ jobs:
       run: |
         python3 ${GITHUB_WORKSPACE}/export.py -f sarif -a QWIETAIMulti
       env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN_POC }}
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
     - name: Download customize_sarif.py
       run: |
@@ -66,7 +66,7 @@ jobs:
       run: |
         python3 customize_sarif.py ngsast-report-QWIETAIMulti.sarif customized-report.sarif
       env:
-        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN_POC }}
+        SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
 
     - name: Upload Customized SARIF to GitHub Security Tab
       uses: github/codeql-action/upload-sarif@v3  # Updated to v3
