@@ -1,5 +1,5 @@
 ---
-# This workflow integrates ShiftLeft NG SAST with GitHub and exports SARIF results to the Security Tab
+# This workflow integrates Qwiet preZero with GitHub and exports SARIF results to the Security Tab
 name: QwietAFPRnBR
 
 on:
@@ -18,13 +18,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup Java JDK v8
+    - name: Setup Java JDK v11
       uses: actions/setup-java@v3
       with:
         distribution: zulu
-        java-version: 8
+        java-version: 11
 
-    - name: Download ShiftLeft CLI
+    - name: Download Qwiet CLI
       run: |
         curl https://cdn.shiftleft.io/download/sl > ${GITHUB_WORKSPACE}/sl && chmod a+rx ${GITHUB_WORKSPACE}/sl
 
@@ -33,7 +33,7 @@ jobs:
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
 
-    - name: NextGen Static Analysis
+    - name: preZero NextGen Static Analysis
       run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --container 18fgsa/s3-resource --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }}
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
