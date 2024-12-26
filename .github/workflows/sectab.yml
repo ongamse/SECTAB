@@ -34,7 +34,7 @@ jobs:
       id: extract_branch
 
     - name: preZero NextGen Static Analysis
-      run: ${GITHUB_WORKSPACE}/sl analyze --strict --app QwietAI-MultiLang2 --wait --verbose --container alpine/curl:8.3.0 --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }}
+      run: ${GITHUB_WORKSPACE}/sl analyze --strict --app QwietAI-MultiLang --wait --verbose --container alpine/curl:8.3.0 --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }}
       #--container 18fgsa/s3-resource
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN }}
