@@ -33,7 +33,7 @@ jobs:
       id: extract_branch
 
     - name: QwietAI preZero Analysis
-      run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --container 18fgsa/s3-resource --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} --javasrc . -- --exclude common.py,export2.py,export3.py,export4.py
+      run: ${GITHUB_WORKSPACE}/sl analyze --strict --wait --verbose --container 18fgsa/s3-resource --tag branch=${{ github.head_ref || steps.extract_branch.outputs.branch }} -- --exclude common.py,export2.py,export3.py,export4.py
       env:
         SHIFTLEFT_ACCESS_TOKEN: ${{ secrets.SHIFTLEFT_ACCESS_TOKEN_DEMO }}
         SHIFTLEFT_API_HOST: www.shiftleft.io
